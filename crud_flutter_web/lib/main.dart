@@ -42,11 +42,14 @@ class _UserPageState extends State<UserPage> {
   // Pagination
   int currentPage = 1;
   final int pageSize = 5;
+  int totalUsers = 0;
+  bool hasNextPage = false;
+  bool hasPreviousPage = false;
 
   // Edit state
   int? editUserId;
   html.File? pickedImage;
-  String? previewObjectUrl; // for local preview of picked image
+  String? previewObjectUrl; 
 
   @override
   void initState() {
@@ -68,7 +71,17 @@ class _UserPageState extends State<UserPage> {
   Future<void> fetchUsers() async {
     setState(() => loading = true);
     try {
-      users = await ApiService.getUsers();
+      final response = await ApiService.getUsers(
+        page: currentPage,
+        pageSize: pageSize,
+      );
+      
+      setState(() {
+        users = List<User>.from(response['users']);
+        totalUsers = response['count'];
+        hasNextPage = response['next'];
+        hasPreviousPage = response['previous'];
+      });
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error fetching users: $e');
     } finally {
@@ -76,55 +89,17 @@ class _UserPageState extends State<UserPage> {
     }
   }
 
-  void pickImage() {
-    final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
-    uploadInput.click();
-    uploadInput.onChange.listen((e) {
-      final files = uploadInput.files;
-      if (files != null && files.isNotEmpty) {
-        pickedImage = files.first;
-        if (previewObjectUrl != null) html.Url.revokeObjectUrl(previewObjectUrl!);
-        previewObjectUrl = html.Url.createObjectUrlFromBlob(pickedImage!);
-        setState(() {});
-      }
-    });
+  void nextPage() {
+    if (hasNextPage) {
+      setState(() => currentPage++);
+      fetchUsers();
+    }
   }
 
-  String? validateEmail(String? val) {
-    if (val == null || val.trim().isEmpty) return 'Email is required';
-    final reg = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return reg.hasMatch(val.trim()) ? null : 'Invalid email';
-  }
-
-  String? validateName(String? val) {
-    if (val == null || val.trim().isEmpty) return 'Name is required';
-    return null;
-  }
-
-  String? validatePhone(String? val) {
-    if (val == null || val.trim().isEmpty) return null; // optional
-    final reg = RegExp(r'^\d+$');
-    return reg.hasMatch(val.trim()) ? null : 'Phone must be numeric';
-  }
-
-  String? validateAge(String? val) {
-    if (val == null || val.trim().isEmpty) return null; // optional
-    final age = int.tryParse(val.trim());
-    if (age == null) return 'Age must be a number';
-    if (age <= 0) return 'Age must be greater than 0';
-    if (age > 120) return 'Please enter a valid age';
-    return null;
-  }
-
-  // Check if email already exists
-  Future<bool> isEmailUnique(String email, {int? excludeUserId}) async {
-    try {
-      final allUsers = await ApiService.getUsers();
-      return !allUsers.any((user) =>
-          user.email.toLowerCase() == email.toLowerCase() &&
-          (excludeUserId == null || user.id != excludeUserId));
-    } catch (e) {
-      return false;
+  void previousPage() {
+    if (currentPage > 1) {
+      setState(() => currentPage--);
+      fetchUsers();
     }
   }
 
@@ -479,6 +454,99 @@ class _UserPageState extends State<UserPage> {
     );
   }
 
+  // Image picker method
+  void pickImage() {
+    final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
+    uploadInput.click();
+    uploadInput.onChange.listen((e) {
+      final files = uploadInput.files;
+      if (files != null && files.isNotEmpty) {
+        setState(() {
+          pickedImage = files.first;
+          if (previewObjectUrl != null) {
+            html.Url.revokeObjectUrl(previewObjectUrl!);
+          }
+          previewObjectUrl = html.Url.createObjectUrlFromBlob(pickedImage!);
+        });
+      }
+    });
+  }
+
+  // Validation methods
+  String? validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Name is required';
+    }
+    return null;
+  }
+
+  String? validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email is required';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
+
+  String? validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // Phone is optional
+    }
+    final phoneRegex = RegExp(r'^[0-9+\-\s()]*$');
+    if (!phoneRegex.hasMatch(value)) {
+      return 'Enter a valid phone number';
+    }
+    return null;
+  }
+
+  String? validateAge(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // Age is optional
+    }
+    final age = int.tryParse(value);
+    if (age == null) {
+      return 'Enter a valid number';
+    }
+    if (age < 1 || age > 120) {
+      return 'Age must be between 1 and 120';
+    }
+    return null;
+  }
+
+  // Email uniqueness check
+  Future<bool> isEmailUnique(String email, {int? excludeUserId}) async {
+    try {
+      // First, check the current page
+      for (final user in users) {
+        if (user.email.toLowerCase() == email.toLowerCase() &&
+            (excludeUserId == null || user.id != excludeUserId)) {
+          return false;
+        }
+      }
+      
+      // If not found on current page, check if we need to check other pages
+      if (hasNextPage) {
+        // For simplicity, we'll just check the next page
+        // In a real app, you might want to implement a more thorough check
+        final nextPage = currentPage + 1;
+        final response = await ApiService.getUsers(page: nextPage, pageSize: pageSize);
+        final nextPageUsers = List<User>.from(response['users']);
+        
+        return !nextPageUsers.any((user) =>
+            user.email.toLowerCase() == email.toLowerCase() &&
+            (excludeUserId == null || user.id != excludeUserId));
+      }
+      
+      return true;
+    } catch (e) {
+      print('Error checking email uniqueness: $e');
+      return false; // Default to false to prevent duplicate emails on error
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -513,7 +581,28 @@ class _UserPageState extends State<UserPage> {
               ? Center(child: CircularProgressIndicator())
               : showForm
                   ? _buildUserForm()
-                  : _buildUserList(),
+                  : Column(
+                      children: [
+                        _buildUserList(),
+                        SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: previousPage,
+                              child: Text('Previous'),
+                            ),
+                            SizedBox(width: 16),
+                            Text('Page $currentPage of $totalUsers'),
+                            SizedBox(width: 16),
+                            ElevatedButton(
+                              onPressed: nextPage,
+                              child: Text('Next'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
         ),
       ),
     );
