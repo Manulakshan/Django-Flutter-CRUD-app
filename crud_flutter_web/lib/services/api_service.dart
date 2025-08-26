@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:html' as html; // only for web file upload
+import 'dart:html' as html;
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/user.dart';
 
 class ApiService {
-  // Set base to your backend. If running locally:
-  static const String base = "http://127.0.0.1:8000";
-  static const String baseUrl = "$base/api/users/";
+  // Get base URL from environment variables
+  static String get baseUrl => dotenv.get('API_URL', fallback: 'http://127.0.0.1:8000/api/users/');
 
   // Get users with pagination support
   static Future<Map<String, dynamic>> getUsers({int page = 1, int pageSize = 5}) async {
@@ -155,6 +155,7 @@ class ApiService {
     if (profilePicture.startsWith('http')) return profilePicture;
     // Ensure it has leading slash
     final p = profilePicture.startsWith('/') ? profilePicture : '/$profilePicture';
+    final base = dotenv.get('API_URL', fallback: 'http://127.0.0.1:8000');
     return '$base$p';
   }
 }
