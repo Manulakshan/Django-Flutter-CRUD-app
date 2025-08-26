@@ -51,3 +51,7 @@ ENV/
 
 # Local development
 .DS_Store
+
+# Media and profile files
+media/
+profiles/
