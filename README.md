@@ -70,19 +70,6 @@ Frontend (.env in crud_flutter_web/)
 
 API_BASE_URL=http://127.0.0.1:8000/api
 
-innobot_crud/
-├── crud_flutter_web/       # Flutter frontend
-│   ├── lib/
-│   │   ├── models/         # Data models
-│   │   ├── screens/        # App screens
-│   │   ├── services/       # API services
-│   │   └── widgets/        # Reusable widgets
-│   └── pubspec.yaml        # Flutter dependencies
-│
-└── innobotcrud/            # Django backend
-    ├── innobotcrud/        # Project settings
-    ├── users/              # Users app
-    └── manage.py           # Django management script
 
  🛠️ Troubleshooting
 
