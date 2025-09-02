@@ -247,6 +247,8 @@ class _UserListScreenState extends State<UserListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('User Management'),
+        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).primaryColor,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -284,9 +286,9 @@ class _UserListScreenState extends State<UserListScreen> {
             Container(
               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: Theme.of(context).primaryColor,
                 border: Border(
-                  top: BorderSide(color: Colors.grey[300]!), 
+                  top: BorderSide(color: Theme.of(context).primaryColor), 
                 ),
               ),
               child: Row(
@@ -294,18 +296,18 @@ class _UserListScreenState extends State<UserListScreen> {
                 children: [
                   Text(
                     'Showing ${(currentPage - 1) * pageSize + 1}-${(currentPage - 1) * pageSize + users.length} of $totalUsers users',
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Colors.white),
                   ),
                   Row(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.arrow_back_ios, size: 18),
+                        icon: Icon(Icons.arrow_back_ios, size: 18,color: Colors.white),
                         onPressed: hasPreviousPage ? previousPage : null,
                         tooltip: 'Previous Page',
                       ),
-                      Text('Page $currentPage of ${(totalUsers / pageSize).ceil()}'),
+                      Text('Page $currentPage of ${(totalUsers / pageSize).ceil()}', style: TextStyle(color: Colors.white)),
                       IconButton(
-                        icon: Icon(Icons.arrow_forward_ios, size: 18),
+                        icon: Icon(Icons.arrow_forward_ios, size: 18, color: Colors.white),
                         onPressed: hasNextPage ? nextPage : null,
                         tooltip: 'Next Page',
                       ),
