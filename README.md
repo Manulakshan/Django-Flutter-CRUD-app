@@ -69,6 +69,7 @@ Make sure you have installed:
 Frontend (.env in crud_flutter_web/)
 
 BASE_URL=http://127.0.0.1:8000
+
 API_URL=$BASE_URL/api/users/
 
  🛠️ Troubleshooting
